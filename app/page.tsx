@@ -1,4 +1,4 @@
-import { ScannerForm } from "@/components/scanner-form";
+import { ScannerForm } from "../components/scanner-form";
 
 export default function Home() {
   return (
