@@ -384,13 +384,31 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
       }
     });
 
-    // ── 페이지 로드 (최대 45초, load 이벤트까지 기다려야 스크립트 실행됨) ──
-    const res = await page.goto(scanUrl, { waitUntil: "load", timeout: 45000 });
-    if (!res || !res.ok())
-      return { success: false, error: `페이지 로드 실패 (HTTP ${res?.status() ?? "unknown"})` };
+    // ── 페이지 로드 ───────────────────────────────────────────────────
+    // domcontentloaded: DOM 준비 시점 (load보다 훨씬 빠름)
+    // 대형 쇼핑몰은 이미지·lazy-load 리소스 때문에 load 이벤트가 45초 이상 걸릴 수 있음
+    let httpStatus: number | null = null;
+    try {
+      const res = await page.goto(scanUrl, { waitUntil: "domcontentloaded", timeout: 40000 });
+      httpStatus = res?.status() ?? null;
+      if (res && !res.ok() && httpStatus !== null && httpStatus >= 400) {
+        return { success: false, error: `페이지 로드 실패 (HTTP ${httpStatus})` };
+      }
+    } catch (e) {
+      const msg = (e as Error).message;
+      // 타임아웃이면 DOM은 로드됐을 수 있으므로 계속 진행
+      if (msg.includes("Timeout")) {
+        rawSdkData += `\n[goto-timeout] 페이지 로드 지연 — 부분 로드로 계속 진행`;
+      } else {
+        return { success: false, error: `페이지 로드 실패: ${msg.slice(0, 300)}` };
+      }
+    }
+
+    // 리다이렉트·추가 네비게이션 안정화 대기 (짧게)
+    await page.waitForLoadState("domcontentloaded", { timeout: 5000 }).catch(() => {});
 
     // 동의 버튼 클릭 시도
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 1200));
     for (const sel of [
       "#truste-consent-button",
       "#truste-show-consent",
@@ -399,11 +417,15 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
       "button[aria-label*='Accept']",
       "button[aria-label*='accept']",
     ]) {
-      await page.locator(sel).first().click({ timeout: 800 }).catch(() => {});
+      await page.locator(sel).first().click({ timeout: 600 }).catch(() => {});
     }
+
+    // 동의 클릭 후 리다이렉트 발생 시 컨텍스트 파괴 방지 — 안정화 대기
+    await page.waitForLoadState("domcontentloaded", { timeout: 5000 }).catch(() => {});
 
     // ── TrustArc 동의 이벤트 강제 발화 ────────────────────────────────
     // Samsung Launch 룰이 TrustArc JS 이벤트를 기다리는 경우 커버
+    // "Execution context was destroyed" 방지: 각 evaluate를 try-catch로 감쌈
     await page.evaluate(() => {
       const w = window as unknown as Record<string, unknown>;
 
@@ -454,13 +476,14 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
         window.postMessage({ type: "consent_update",   cmapi_cookie_privacy: "permit 1,2,3" }, "*");
         window.postMessage({ name: "trustarc_consent", status: "accept" }, "*");
       } catch { /* ignore */ }
-    });
+    }).catch(() => {}); // 리다이렉트로 컨텍스트 파괴 시 무시
 
     // 사용자 인터랙션 시뮬레이션 (Launch Rule 트리거 조건)
     await new Promise((r) => setTimeout(r, 800));
     await page.mouse.move(720, 400).catch(() => {});
     for (let y = 0; y <= 600; y += 300) {
-      await page.evaluate((sy) => window.scrollTo({ top: sy, behavior: "smooth" }), y);
+      await page.evaluate((sy) => window.scrollTo({ top: sy, behavior: "smooth" }), y)
+        .catch(() => {});
       await new Promise((r) => setTimeout(r, 200));
     }
 
@@ -499,12 +522,13 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
         } catch { /* ignore */ }
       }
       try { window.postMessage({ type: "consent_update", cmapi_cookie_privacy: "permit 1,2,3" }, "*"); } catch { /* ignore */ }
-    });
+    }).catch(() => {}); // 리다이렉트로 컨텍스트 파괴 시 무시
 
     // ── 비동기 Target 응답 완료 대기 (5초) ───────────────────────────
     await new Promise((r) => setTimeout(r, 5000));
 
-    // ── SDK 존재 확인 (alloyLog 여부와 무관하게 먼저 체크) ────────────
+    // ── SDK 존재 확인 ────────────────────────────────────────────────
+    // "Execution context was destroyed" 방지: 네비게이션 후 컨텍스트 파괴 가능성 → try-catch
     const sdkPresence = await page.evaluate(() => {
       const w = window as unknown as Record<string, unknown>;
       const hasAlloy  = typeof w.alloy === "function";
@@ -528,7 +552,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
         } catch {}
       }
       return { hasAlloy, hasTarget, version };
-    });
+    }).catch(() => ({ hasAlloy: false, hasTarget: false, version: "unknown" }));
 
     if (sdkPresence.hasAlloy)  { sdkType = "WebSDK"; sdkVersion = sdkPresence.version; }
     if (sdkPresence.hasTarget) { sdkType = "at.js";  sdkVersion = sdkPresence.version; }
@@ -536,7 +560,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     // ── Samsung Launch가 발화한 alloy 호출 결과 수집 ─────────────────
     const alloyLog = await page.evaluate(
       () => (window as unknown as Record<string, unknown>).__alloyLog as { cmd: string; result: string }[] ?? []
-    );
+    ).catch(() => [] as { cmd: string; result: string }[]);
     rawSdkData += `\n[alloyLog-count] ${alloyLog.length}건`;
 
     let sdkDetected = sdkPresence.hasAlloy || sdkPresence.hasTarget;
