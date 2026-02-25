@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --ring: 221 83% 53%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --card: 222 47% 8%;
+    --card-foreground: 213 31% 91%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --primary: 221 83% 60%;
+    --primary-foreground: 222 47% 4%;
+    --secondary: 222 47% 13%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 223 47% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+    --ring: 221 83% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  html.dark body {
+    background-color: hsl(224 71% 4%);
+    color: hsl(213 31% 91%);
+  }
+
+  /* ── JSS 전용 확장 토큰 ── light ───────────────────────────────── */
+  :root {
+    --jss-surface: 0 0% 100%;
+    --jss-surface-hover: 210 17% 98%;
+    --jss-surface-2: 210 17% 96%;
+    --jss-text-muted: 215 16% 62%;
+    --jss-primary-hover: 221 83% 40%;
+    --jss-primary-bg: 221 83% 95%;
+    --jss-primary-text: 221 83% 42%;
+    --jss-primary-border: 221 83% 85%;
+    --jss-primary-ring: rgba(37, 99, 235, 0.15);
+    --jss-success: 160 84% 39%;
+    --jss-success-bg: 152 81% 96%;
+    --jss-success-border: 152 76% 80%;
+    --jss-success-text: 161 94% 30%;
+    --jss-warning: 38 92% 50%;
+    --jss-warning-bg: 54 92% 95%;
+    --jss-warning-border: 46 97% 77%;
+    --jss-warning-text: 32 81% 29%;
+    --jss-badge-blue-bg: 221 83% 95%; --jss-badge-blue-text: 221 83% 42%; --jss-badge-blue-border: 221 83% 85%;
+    --jss-badge-violet-bg: 263 87% 96%; --jss-badge-violet-text: 263 67% 46%; --jss-badge-violet-border: 263 87% 88%;
+    --jss-badge-emerald-bg: 152 81% 96%; --jss-badge-emerald-text: 161 94% 30%; --jss-badge-emerald-border: 152 76% 80%;
+    --jss-badge-amber-bg: 54 92% 95%; --jss-badge-amber-text: 32 81% 29%; --jss-badge-amber-border: 46 97% 77%;
+    --jss-badge-slate-bg: 210 17% 98%; --jss-badge-slate-text: 215 25% 39%; --jss-badge-slate-border: 213 27% 88%;
+    --jss-card-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+    --jss-hover-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    --jss-card-hover-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    --jss-hero-gradient: linear-gradient(to bottom, rgba(241,243,245,0.8), rgba(248,249,250,0));
+  }
+
+  /* ── JSS 전용 확장 토큰 ── dark ────────────────────────────────── */
+  .dark {
+    --jss-surface: 222 47% 8%;
+    --jss-surface-hover: 222 47% 11%;
+    --jss-surface-2: 222 47% 13%;
+    --jss-text-muted: 215 16% 40%;
+    --jss-primary-hover: 221 83% 70%;
+    --jss-primary-bg: 221 83% 13%;
+    --jss-primary-text: 221 83% 75%;
+    --jss-primary-border: 221 83% 25%;
+    --jss-primary-ring: rgba(59, 130, 246, 0.25);
+    --jss-success: 160 84% 45%;
+    --jss-success-bg: 161 84% 8%;
+    --jss-success-border: 160 50% 22%;
+    --jss-success-text: 152 76% 72%;
+    --jss-warning: 38 92% 56%;
+    --jss-warning-bg: 38 92% 8%;
+    --jss-warning-border: 38 70% 27%;
+    --jss-warning-text: 46 97% 65%;
+    --jss-badge-blue-bg: 221 83% 13%; --jss-badge-blue-text: 221 83% 75%; --jss-badge-blue-border: 221 83% 25%;
+    --jss-badge-violet-bg: 263 87% 12%; --jss-badge-violet-text: 263 67% 77%; --jss-badge-violet-border: 263 87% 22%;
+    --jss-badge-emerald-bg: 161 84% 8%; --jss-badge-emerald-text: 152 76% 72%; --jss-badge-emerald-border: 160 50% 22%;
+    --jss-badge-amber-bg: 38 92% 8%; --jss-badge-amber-text: 46 97% 65%; --jss-badge-amber-border: 38 70% 27%;
+    --jss-badge-slate-bg: 222 47% 13%; --jss-badge-slate-text: 215 20% 65%; --jss-badge-slate-border: 216 34% 17%;
+    --jss-card-shadow: 0 1px 3px rgba(0,0,0,0.30);
+    --jss-hover-shadow: 0 4px 12px rgba(0,0,0,0.40);
+    --jss-card-hover-shadow: 0 8px 32px rgba(0,0,0,0.50);
+    --jss-hero-gradient: linear-gradient(to bottom, rgba(22,29,45,0.6), rgba(12,15,26,0));
+  }
+}
+
+@layer utilities {
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
