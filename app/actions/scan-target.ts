@@ -167,19 +167,32 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     return u.toString();
   })();
 
+  // 서버 환경(Render 등 X서버 없음)에서는 headless 강제 적용
+  const isServer = !process.env.DISPLAY && process.env.NODE_ENV === "production";
+  const headless = isServer ? true : false;
+
   const stealthArgs = [
     "--disable-blink-features=AutomationControlled",
     "--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage",
     "--no-first-run", "--no-default-browser-check",
-    "--window-position=-2400,-2400",
+    "--disable-gpu",          // 컨테이너 환경 GPU 없음
+    "--no-zygote",            // container 프로세스 격리 문제 방지
+    ...(headless ? [] : ["--window-position=-2400,-2400"]),
   ];
 
   let browser;
   try {
-    browser = await chromium.launch({ headless: false, channel: "chrome", args: stealthArgs });
-  } catch {
-    try { browser = await chromium.launch({ headless: false, args: stealthArgs }); }
-    catch (e) { return { success: false, error: `브라우저 실행 실패: ${(e as Error).message}` }; }
+    // 서버 환경에서는 channel:"chrome" 시도 생략 (Chrome 미설치)
+    if (!isServer) {
+      try {
+        browser = await chromium.launch({ headless, channel: "chrome", args: stealthArgs });
+      } catch { /* Chrome 없을 시 아래 fallback */ }
+    }
+    if (!browser) {
+      browser = await chromium.launch({ headless, args: stealthArgs });
+    }
+  } catch (e) {
+    return { success: false, error: `브라우저 실행 실패: ${(e as Error).message}` };
   }
 
   const allRequestUrls: string[]       = [];
@@ -649,6 +662,6 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
   } catch (e) {
     return { success: false, error: `스캔 중 오류: ${(e as Error).message}` };
   } finally {
-    await browser.close().catch(() => {});
+    await browser?.close().catch(() => {});
   }
 }
