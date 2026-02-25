@@ -347,7 +347,7 @@ function ResultView({ result, dark, tab, onTabChange }: {
                   {t === "activities" && result.success && (
                     <span className={tabs.tabBadge}>{result.items.length}</span>
                   )}
-                  {t === "debug" && result.debug.interactRequests.length > 0 && (
+                  {t === "debug" && result.debug && result.debug.interactRequests.length > 0 && (
                     <span className={`${tabs.tabBadge} ${tabs.tabBadgeGreen}`}>
                       {result.debug.interactRequests.length}
                     </span>
@@ -365,9 +365,9 @@ function ResultView({ result, dark, tab, onTabChange }: {
               />
             )}
             {tab === "screenshot" && (
-              <ScreenshotTab screenshot={result.debug.screenshotBase64} dark={dark} />
+              <ScreenshotTab screenshot={result.debug?.screenshotBase64 ?? ""} dark={dark} />
             )}
-            {tab === "debug" && (
+            {tab === "debug" && result.debug && (
               <DebugTab debug={result.debug} dark={dark} />
             )}
           </div>
