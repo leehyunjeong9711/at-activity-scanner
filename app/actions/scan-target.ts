@@ -2,6 +2,12 @@
 
 import { chromium } from "rebrowser-playwright";
 
+// ── 동시 스캔 방지 Lock ───────────────────────────────────────────────
+// Render 무료 플랜: 단일 인스턴스 512MB RAM
+// Chromium 1개 실행만으로 ~300MB 소비 → 동시 실행 시 OOM → 타임아웃/크래시
+// 동시 요청은 친절한 안내 메시지로 즉시 반환
+let _scanLock = false;
+
 export type TargetActivityItem = {
   activityId: string;
   experienceId: string;
@@ -159,6 +165,18 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
   if (!["http:", "https:"].includes(parsed.protocol))
     return { success: false, error: "http 또는 https URL만 지원합니다." };
 
+  // ── 동시 실행 방지 ────────────────────────────────────────────────
+  if (_scanLock) {
+    return {
+      success: false,
+      error:
+        "⏳ 현재 다른 스캔이 진행 중입니다.\n" +
+        "서버 메모리 제한으로 동시에 1개의 스캔만 지원합니다.\n" +
+        "약 60초 후 다시 시도해 주세요.",
+    };
+  }
+  _scanLock = true;
+
   // 디버그 파라미터 추가
   const scanUrl = (() => {
     const u = new URL(trimmed);
@@ -192,6 +210,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
       browser = await chromium.launch({ headless, args: stealthArgs });
     }
   } catch (e) {
+    _scanLock = false;
     return { success: false, error: `브라우저 실행 실패: ${(e as Error).message}` };
   }
 
@@ -686,6 +705,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
   } catch (e) {
     return { success: false, error: `스캔 중 오류: ${(e as Error).message}` };
   } finally {
+    _scanLock = false;
     await browser?.close().catch(() => {});
   }
 }
