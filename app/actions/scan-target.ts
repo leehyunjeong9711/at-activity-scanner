@@ -215,7 +215,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     // stealth
     await context.addInitScript(() => {
       Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-      const w = window as Record<string, unknown>;
+      const w = window as unknown as Record<string, unknown>;
       if (!w.chrome) w.chrome = { runtime: {} };
     });
 
@@ -225,7 +225,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     // Samsung Launch가 window.alloy = fn 하는 순간 래퍼 주입
     // → Samsung이 자연 발화하는 모든 alloy() 호출 결과를 자동 수집
     await page.addInitScript(() => {
-      const w = window as Record<string, unknown>;
+      const w = window as unknown as Record<string, unknown>;
       w.__alloyLog = [] as { cmd: string; result: string }[];
 
       let _real: ((cmd: string, ...a: unknown[]) => Promise<unknown>) | null = null;
@@ -307,7 +307,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
       for (const [k, v] of kv) { try { localStorage.setItem(k, v); } catch {} }
 
       // TrustArc CMA API를 페이지 로드 전부터 mock
-      const w = window as Record<string, unknown>;
+      const w = window as unknown as Record<string, unknown>;
       const mockCma = {
         callApi: (name: string, _domain: unknown, cb: ((r: unknown) => void) | undefined) => {
           if (name === "getGDPRConsentDecision" || name === "getConsent") {
@@ -392,7 +392,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     // ── TrustArc 동의 이벤트 강제 발화 ────────────────────────────────
     // Samsung Launch 룰이 TrustArc JS 이벤트를 기다리는 경우 커버
     await page.evaluate(() => {
-      const w = window as Record<string, unknown>;
+      const w = window as unknown as Record<string, unknown>;
 
       // 1. truste.cma.callApi 실시간 override (이미 로드됐을 경우)
       const truste = (w.truste as Record<string, unknown> | undefined);
@@ -453,7 +453,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
 
     // SDK 초기화 대기 (최대 10초)
     await page.waitForFunction(() => {
-      const w = window as Record<string, unknown>;
+      const w = window as unknown as Record<string, unknown>;
       return typeof w.alloy === "function" ||
         typeof (w.adobe as Record<string, unknown> | undefined)?.target !== "undefined";
     }, { timeout: 10000 }).catch(() => {});
@@ -461,7 +461,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     // ── SDK 초기화 후 TrustArc 동의 이벤트 2차 발화 ─────────────────
     // Launch 룰 리스너가 늦게 등록되는 경우를 커버
     await page.evaluate(() => {
-      const w = window as Record<string, unknown>;
+      const w = window as unknown as Record<string, unknown>;
       const truste = w.truste as Record<string, unknown> | undefined;
       if (truste) {
         truste.cma = {
@@ -493,7 +493,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
 
     // ── SDK 존재 확인 (alloyLog 여부와 무관하게 먼저 체크) ────────────
     const sdkPresence = await page.evaluate(() => {
-      const w = window as Record<string, unknown>;
+      const w = window as unknown as Record<string, unknown>;
       const hasAlloy  = typeof w.alloy === "function";
       const hasTarget = !!(w.adobe as Record<string, unknown> | undefined)?.target;
       let version = "unknown";
@@ -522,7 +522,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
 
     // ── Samsung Launch가 발화한 alloy 호출 결과 수집 ─────────────────
     const alloyLog = await page.evaluate(
-      () => (window as Record<string, unknown>).__alloyLog as { cmd: string; result: string }[] ?? []
+      () => (window as unknown as Record<string, unknown>).__alloyLog as { cmd: string; result: string }[] ?? []
     );
     rawSdkData += `\n[alloyLog-count] ${alloyLog.length}건`;
 
@@ -545,7 +545,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     // ── at.js getOffers 폴백 ──────────────────────────────────────────
     if (networkItems.length === 0 && sdkDetected && sdkType === "at.js") {
       const atResult = await page.evaluate(async () => {
-        const w   = window as Record<string, unknown>;
+        const w   = window as unknown as Record<string, unknown>;
         const t   = (w.adobe as Record<string, unknown> | undefined)?.target as Record<string, unknown> | undefined;
         if (!t) return null;
         try {
@@ -567,7 +567,7 @@ export async function scanTargetActivity(url: string): Promise<ScanResult> {
     // ── 결과 없으면: sendEvent 직접 호출 (폴백) ────────────────────────
     if (networkItems.length === 0 && sdkDetected && sdkType === "WebSDK") {
       const fallbackResult = await page.evaluate(async () => {
-        const w = window as Record<string, unknown>;
+        const w = window as unknown as Record<string, unknown>;
         if (typeof w.alloy !== "function") return null;
         const alloy = w.alloy as (cmd: string, opts?: unknown) => Promise<unknown>;
         try {
