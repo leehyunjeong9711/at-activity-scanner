@@ -21,7 +21,8 @@
     "react-dom": "18.2.0",
     "react-jss": "^10.10.0",
     "rebrowser-playwright": "^1.52.0",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.12.0",
